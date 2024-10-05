@@ -9,6 +9,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 async def worker(actions):
     # Initialize the headless browser
@@ -50,12 +53,7 @@ async def worker(actions):
             driver.get(url)
         elif action_type == 'click':
             selector = action.get('selector')
-            try:
-                element = driver.find_element(By.CSS_SELECTOR, selector)
-                element.click()
-                print(f"Clicked on element: {selector}")
-            except Exception as e:
-                print(f"Error clicking element {selector}: {e}")
+            click_element(driver, selector)
         elif action_type == 'input':
             selector = action.get('selector')
             value = action.get('value', '')
@@ -80,6 +78,18 @@ async def worker(actions):
     # Close the browser
     driver.quit()
     print("Workflow execution completed.")
+
+def click_element(driver, selector):
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+        )
+        element.click()
+        print(f"Clicked on element: {selector}")
+    except TimeoutException:
+        print(f"Element not clickable: {selector}")
+    except Exception as e:
+        print(f"Error clicking element {selector}: {e}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
