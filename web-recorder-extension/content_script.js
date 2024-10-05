@@ -145,21 +145,46 @@ function handleNavigation() {
 function getSelector(element) {
   if (element.id) {
     return `#${element.id}`;
-  } else {
-    const path = [];
-    let currentElement= element;
-    while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE) {
-      let selector = currentElement.nodeName.toLowerCase();
-      if (currentElement.className) {
-        selector += '.' + Array.from(currentElement.classList).join('.');
-      }
-      const siblingIndex = Array.from(currentElement.parentNode?.children || []).indexOf(currentElement) + 1;
-      selector += `:nth-child(${siblingIndex})`;
-      path.unshift(selector);
-      currentElement = currentElement.parentElement;
-    }
-    return path.join(' > ');
   }
+  
+  if (element.tagName.toLowerCase() === 'a') {
+    // For anchor tags, use href attribute if available
+    if (element.href) {
+      return `a[href="${element.getAttribute('href')}"]`;
+    }
+    // If no href, try using text content
+    if (element.textContent.trim()) {
+      return `a:contains("${element.textContent.trim()}")`;
+    }
+  }
+  
+  let selector = element.tagName.toLowerCase();
+  
+  if (element.className) {
+    const classes = Array.from(element.classList)
+      .filter(c => !c.startsWith('hover:') && !c.includes(':'))
+      .slice(0, 2); // Use up to 2 classes
+    if (classes.length > 0) {
+      selector += '.' + classes.join('.');
+    }
+  }
+  
+  // Add attribute selectors for data attributes
+  const dataAttrs = Array.from(element.attributes)
+    .filter(attr => attr.name.startsWith('data-'))
+    .slice(0, 2); // Use up to 2 data attributes
+  dataAttrs.forEach(attr => {
+    selector += `[${attr.name}="${attr.value}"]`;
+  });
+  
+  // If the selector is still not unique, add nth-child
+  const siblings = element.parentNode ? Array.from(element.parentNode.children) : [];
+  if (siblings.length > 1) {
+    const index = siblings.indexOf(element) + 1;
+    selector += `:nth-child(${index})`;
+  }
+  
+  return selector;
 }
 
 function attachListenersToIframes() {
