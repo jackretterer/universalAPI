@@ -9,6 +9,10 @@ let lastRecordedUrl = '';
 let observer;
 
 function startRecording() {
+  if (isRecording) {
+    console.log('Recording already in progress');
+    return;
+  }
   console.log('Starting recording...');
   isRecording = true;
   recordingStartTime = Date.now();
@@ -70,6 +74,8 @@ function handleClick(event) {
     type: 'click',
     timestamp: Date.now() - recordingStartTime,
     selector: getSelector(target),
+    x: event.clientX,
+    y: event.clientY,
   };
   
   if (target.tagName.toLowerCase() === 'a' && target.href) {
@@ -129,6 +135,7 @@ function handleNavigation() {
       type: 'navigation',
       timestamp: Date.now() - recordingStartTime,
       url: currentUrl,
+      title: document.title,
     };
     actions.push(action);
     lastRecordedUrl = currentUrl;
@@ -173,7 +180,6 @@ function attachListenersToIframes() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Message received in content script:', request);
   if (request.action === 'startRecording') {
-    console.log('Starting recording...');
     startRecording();
     sendResponse({ status: 'Recording started' });
   } else if (request.action === 'stopRecording') {
@@ -186,10 +192,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Check if we should start recording immediately (in case of page refresh during recording)
-chrome.storage.local.get('isRecording', (result) => {
-  if (result.isRecording) {
-    startRecording();
-  }
-});
+if (document.readyState === 'complete') {
+  chrome.storage.local.get('isRecording', (result) => {
+    if (result.isRecording) {
+      startRecording();
+    }
+  });
+} else {
+  window.addEventListener('load', () => {
+    chrome.storage.local.get('isRecording', (result) => {
+      if (result.isRecording) {
+        startRecording();
+      }
+    });
+  });
+}
 
 console.log('Content script loaded');
+
+// Add these listeners
+window.addEventListener('popstate', handleNavigation);
+window.addEventListener('pushState', handleNavigation);
+window.addEventListener('replaceState', handleNavigation);
+
+// Intercept history methods
+const originalPushState = history.pushState;
+history.pushState = function() {
+  originalPushState.apply(this, arguments);
+  handleNavigation();
+};
+
+const originalReplaceState = history.replaceState;
+history.replaceState = function() {
+  originalReplaceState.apply(this, arguments);
+  handleNavigation();
+};
