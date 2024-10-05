@@ -123,4 +123,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
+// Check if we should start recording immediately (in case of page refresh during recording)
+chrome.storage.local.get('isRecording', (result) => {
+  if (result.isRecording) {
+    startRecording();
+  }
+});
+
 console.log('Content script loaded');

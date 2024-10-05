@@ -1,60 +1,66 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const status = document.getElementById('status');
-    const endpointInput = document.getElementById('endpoint');
-  
-    function isRecording(shouldRecord) {
-      startBtn.disabled = shouldRecord;
-      stopBtn.disabled = !shouldRecord;
-      status.textContent = shouldRecord
-        ? 'Recording in progress...'
-        : 'Recording stopped.';
-    }
-  
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const status = document.getElementById('status');
+  const endpointInput = document.getElementById('endpoint');
+
+  function updateUI(isRecording) {
+    startBtn.disabled = isRecording;
+    stopBtn.disabled = !isRecording;
+    status.textContent = isRecording ? 'Recording in progress...' : 'Recording stopped.';
+  }
+
+  // function isRecording(shouldRecord) {
+  //   startBtn.disabled = shouldRecord;
+  //   stopBtn.disabled = !shouldRecord;
+  //   status.textContent = shouldRecord
+  //     ? 'Recording in progress...'
+  //     : 'Recording stopped.';
+  // }
+
+    // Check the current recording state when the popup opens
+    chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
+      updateUI(response.isRecording);
+      if (response.isRecording) {
+        chrome.storage.local.get('endpoint', (result) => {
+          endpointInput.value = result.endpoint || '';
+        });
+      }
+    });
+
     startBtn.addEventListener('click', function () {
-      console.log('Start button clicked');
       const endpoint = endpointInput.value;
       if (!endpoint) {
-        console.log('No endpoint provided');
         status.textContent = 'Please enter an API endpoint.';
         return;
       }
-      console.log('Endpoint:', endpoint);
-      chrome.storage.local.set({ endpoint }, function() {
-        console.log('Endpoint saved to storage');
-      });
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        console.log('Sending startRecording message to tab:', tabs[0].id);
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'startRecording' }, function(response) {
-          console.log('Response received:', response);
-          if (chrome.runtime.lastError) {
-            console.error('Error:', chrome.runtime.lastError);
-            status.textContent = 'Error: ' + chrome.runtime.lastError.message;
-          } else {
-            console.log('Recording started successfully');
-            isRecording(true);
-          }
+  
+      chrome.storage.local.set({ endpoint, isRecording: true }, function () {
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          chrome.storage.local.set({ recordingTabId: tabs[0].id });
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'startRecording' }, function (response) {
+            if (chrome.runtime.lastError) {
+              console.error('Error:', chrome.runtime.lastError);
+              status.textContent = 'Error: Content script not loaded. Please refresh the page.';
+              chrome.storage.local.set({ isRecording: false, recordingTabId: null });
+            } else {
+              updateUI(true);
+            }
+          });
         });
       });
     });
   
     stopBtn.addEventListener('click', function () {
-      console.log('Stop button clicked');
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        console.log('Sending stopRecording message to tab:', tabs[0].id);
-        chrome.tabs.sendMessage(
-          tabs[0].id,
-          { action: 'stopRecording' },
-          function (response) {
-            console.log('Received response from content script:', response);
-            isRecording(false);
+      chrome.storage.local.get('recordingTabId', function (result) {
+        if (result.recordingTabId) {
+          chrome.tabs.sendMessage(result.recordingTabId, { action: 'stopRecording' }, function (response) {
+            chrome.storage.local.set({ isRecording: false, recordingTabId: null });
+            updateUI(false);
             if (response && response.data) {
               status.textContent = 'Submitting data...';
-              console.log('Data to be sent:', response.data);
               chrome.storage.local.get('endpoint', function (items) {
                 const endpoint = items.endpoint;
-                console.log('Sending data to endpoint:', endpoint);
                 fetch('http://localhost:8000/uipi/create', {
                   method: 'POST',
                   headers: {
@@ -76,8 +82,10 @@ document.addEventListener('DOMContentLoaded', function () {
                   });
               });
             }
-          }
-        );
+          });
+        } else {
+          status.textContent = 'No active recording found.';
+        }
       });
     });
   });
