@@ -15,7 +15,7 @@ This project consists of a Chrome extension for recording web interactions and a
 1. Clone the repository:
    ```
    git clone https://github.com/jackretterer/universalAPI.git
-   cd your-repo-name
+   cd universalAPI
    ```
 
 2. Set up the server:
@@ -51,6 +51,37 @@ To test the recorded workflows, use the following curl command:
     ```
 
 Replace `<API_NAME>` with the endpoint you specified when recording the workflow.
+
+### Inspecting the Database
+
+This project uses SQLite for data storage. If you want to inspect the database directly:
+
+1. Navigate to the `/server` directory:
+   ```
+   cd server
+   ```
+
+2. Open the SQLite database:
+   ```
+   sqlite3 test.db
+   ```
+
+3. Once in the SQLite prompt, you can:
+   - View all tables:
+     ```
+     .tables
+     ```
+   - View all recorded workflows:
+     ```
+     SELECT * FROM uipi;
+     ```
+
+4. To exit the SQLite prompt, use:
+   ```
+   .quit
+   ```
+
+This can be useful for debugging or verifying that workflows are being correctly saved to the database.
 
 ## Project Structure
 
