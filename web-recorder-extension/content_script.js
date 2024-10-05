@@ -5,8 +5,11 @@ let actions = [];
 let recordingStartTime = 0;
 let windowSize = { width: 0, height: 0 };
 let lastMouseMoveTime = 0; // Declare and initialize the variable
+let lastRecordedUrl = '';
+let observer;
 
 function startRecording() {
+  console.log('Starting recording...');
   isRecording = true;
   recordingStartTime = Date.now();
   actions = [];
@@ -16,11 +19,22 @@ function startRecording() {
   };
   addEventListeners();
   attachListenersToIframes();
+  observer = new MutationObserver(() => {
+    handleNavigation();
+  });
+  observer.observe(document, { childList: true, subtree: true });
+  
+  // Record initial page load
+  handleNavigation();
 }
 
 function stopRecording() {
+  console.log('Stopping recording...');
   isRecording = false;
   removeEventListeners();
+  if (observer) {
+    observer.disconnect();
+  }
   const data = {
     actions,
     windowSize,
@@ -51,19 +65,22 @@ function removeEventListeners() {
 
 function handleClick(event) {
   if (!isRecording) return;
-  const target = event.target;
+  const target = event.target.closest('a') || event.target;
   const action = {
     type: 'click',
     timestamp: Date.now() - recordingStartTime,
     selector: getSelector(target),
   };
   
-  // Add href information for anchor tags
   if (target.tagName.toLowerCase() === 'a' && target.href) {
     action.href = target.href;
   }
   
   actions.push(action);
+  console.log('Click recorded:', action);
+  
+  // Force a navigation check after a short delay
+  setTimeout(handleNavigation, 100);
 }
 
 function handleInput(event) {
@@ -105,12 +122,17 @@ function handleMouseMove(event) {
 
 function handleNavigation() {
   if (!isRecording) return;
-  const action = {
-    type: 'navigation',
-    timestamp: Date.now() - recordingStartTime,
-    url: window.location.href,
-  };
-  actions.push(action);
+  const currentUrl = window.location.href;
+  if (currentUrl !== lastRecordedUrl) {
+    console.log('Navigation detected:', currentUrl);
+    const action = {
+      type: 'navigation',
+      timestamp: Date.now() - recordingStartTime,
+      url: currentUrl,
+    };
+    actions.push(action);
+    lastRecordedUrl = currentUrl;
+  }
 }
 
 function getSelector(element) {
@@ -157,6 +179,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'stopRecording') {
     console.log('Stopping recording...');
     const data = stopRecording();
+    console.log('Recorded data:', data);
     sendResponse({ data });
   }
   return true;

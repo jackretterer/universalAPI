@@ -10,3 +10,13 @@ chrome.runtime.onInstalled.addListener(() => {
       return true; // Indicates we will send a response asynchronously
     }
   });
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    chrome.storage.local.get(['isRecording', 'recordingTabId'], (result) => {
+      if (result.isRecording && result.recordingTabId === tabId) {
+        chrome.tabs.sendMessage(tabId, { action: 'startRecording' });
+      }
+    });
+  }
+});
