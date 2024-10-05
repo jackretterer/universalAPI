@@ -7,7 +7,7 @@ chrome.runtime.onInstalled.addListener(() => {
       chrome.storage.local.get(['isRecording', 'recordingTabId'], (result) => {
         sendResponse(result);
       });
-      return true; // Indicates we will send a response asynchronously
+      return true;
     }
   });
 

@@ -10,14 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
     status.textContent = isRecording ? 'Recording in progress...' : 'Recording stopped.';
   }
 
-  // function isRecording(shouldRecord) {
-  //   startBtn.disabled = shouldRecord;
-  //   stopBtn.disabled = !shouldRecord;
-  //   status.textContent = shouldRecord
-  //     ? 'Recording in progress...'
-  //     : 'Recording stopped.';
-  // }
-
     // Check the current recording state when the popup opens
     chrome.runtime.sendMessage({ action: 'getRecordingState' }, (response) => {
       updateUI(response.isRecording);

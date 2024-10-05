@@ -4,7 +4,7 @@ let isRecording = false;
 let actions = [];
 let recordingStartTime = 0;
 let windowSize = { width: 0, height: 0 };
-let lastMouseMoveTime = 0; // Declare and initialize the variable
+let lastMouseMoveTime = 0;
 let lastRecordedUrl = '';
 let observer;
 
@@ -28,7 +28,6 @@ function startRecording() {
   });
   observer.observe(document, { childList: true, subtree: true });
   
-  // Record initial page load
   handleNavigation();
 }
 
@@ -85,7 +84,6 @@ function handleClick(event) {
   actions.push(action);
   console.log('Click recorded:', action);
   
-  // Force a navigation check after a short delay
   setTimeout(handleNavigation, 100);
 }
 
@@ -115,7 +113,7 @@ function handleScroll() {
 function handleMouseMove(event) {
   if (!isRecording) return;
   const now = Date.now();
-  if (now - lastMouseMoveTime < 50) return; // Debounce interval
+  if (now - lastMouseMoveTime < 50) return;
   lastMouseMoveTime = now;
   const action = {
     type: 'mousemove',
