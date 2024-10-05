@@ -1,5 +1,5 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
   
   input {
@@ -8,9 +8,14 @@ body {
   }
   
   button:disabled {
-    background-color: #ccc;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   
   button {
     transition: background-color 0.3s ease;
+  }
+  
+  #status {
+    min-height: 1.5em;
   }

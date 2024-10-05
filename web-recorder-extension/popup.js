@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
           chrome.storage.local.set({ recordingTabId: tabs[0].id });
           chrome.tabs.sendMessage(tabs[0].id, { action: 'startRecording' }, function (response) {
             if (chrome.runtime.lastError) {
-              console.error('Error:', chrome.runtime.lastError);
-              status.textContent = 'Error: Content script not loaded. Please refresh the page.';
+              console.error('Error:', chrome.runtime.lastError.message);
+              status.textContent = `Error: ${chrome.runtime.lastError.message}. Please refresh the page.`;
               chrome.storage.local.set({ isRecording: false, recordingTabId: null });
             } else {
               updateUI(true);
