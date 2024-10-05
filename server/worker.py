@@ -6,9 +6,11 @@ import sys
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 
-async def worker(params):
+async def worker(actions):
     # Initialize the headless browser
     chrome_options = Options()
     chrome_options.add_argument('--headless')  # Run in headless mode
@@ -16,15 +18,13 @@ async def worker(params):
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
 
-    # Specify the path to chromedriver if not in PATH
-    chromedriver_path = os.getenv('CHROMEDRIVER_PATH', 'chromedriver')
+    # Use ChromeDriverManager to get the appropriate ChromeDriver
+    service = Service(ChromeDriverManager().install())
 
-    driver = webdriver.Chrome(executable_path=chromedriver_path, options=chrome_options)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
     
     # Set window size
-    window_size = params.get('windowSize', {})
-    width = window_size.get('width', 1024)
-    height = window_size.get('height', 768)
+    width, height = 1024, 768  # Default size
     driver.set_window_size(width, height)
     print(f"Window size set to {width}x{height}")
 
@@ -32,7 +32,6 @@ async def worker(params):
     start_time = time.time()
     
     # Process each action
-    actions = params.get('actions', [])
     for action in actions:
         action_type = action.get('type')
         timestamp = action.get('timestamp', 0) / 1000  # Convert milliseconds to seconds
@@ -94,10 +93,10 @@ if __name__ == '__main__':
 
     # Parse the parameters
     try:
-        params = json.loads(args.params)
+        actions = json.loads(args.params)
     except json.JSONDecodeError as e:
         print(f"Error decoding parameters: {e}")
         sys.exit(1)
 
     # Run the worker asynchronously
-    asyncio.run(worker(params))
+    asyncio.run(worker(actions))

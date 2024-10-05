@@ -6,6 +6,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String, JSON
 from sqlalchemy.future import select
 import os
+import json  # Add this import
+import sys   # Add this import if not already present
+import asyncio  # Add this import if not already present
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
